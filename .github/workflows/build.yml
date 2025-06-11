@@ -1,0 +1,59 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Set production mode
+      run: |
+        # content.js에서 PRODUCTION_MODE를 true로 변경
+        sed -i 's/const PRODUCTION_MODE = false;/const PRODUCTION_MODE = true;/g' content.js
+        echo "Production mode enabled - debug logs disabled"
+    
+    - name: Build package
+      run: |
+        # 배포를 위한 파일들을 build 디렉토리에 복사
+        mkdir -p build
+        cp manifest.json build/
+        cp content.js build/
+        cp content.css build/
+        cp background.js build/
+        cp popup.html build/
+        cp popup.js build/
+        cp popup.css build/
+        cp -r icons build/
+        
+        # 불필요한 파일들 제외
+        echo "Build completed successfully"
+    
+    - name: Create release archive
+      run: |
+        cd build
+        zip -r ../prompt-navigator-production.zip .
+        cd ..
+        echo "Release archive created: prompt-navigator-production.zip"
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: prompt-navigator-production
+        path: |
+          build/
+          prompt-navigator-production.zip

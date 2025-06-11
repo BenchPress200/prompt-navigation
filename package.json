@@ -1,0 +1,22 @@
+{
+  "name": "chext-llm-utils",
+  "version": "1.0.0",
+  "description": "1. chatgpt.com 사이트 내 헤더에 중앙에 \"⬆︎\", \"⬇︎\" 버튼을 두개 추가함. (버튼 모양은 예쁘게)    - 이 버튼을 누르면 현재 화면 기준으로 \"사용자가 작성한 채팅\"을 기준으로 스크롤 위치가 이동하게 만드는 것      - 사이트에서 chatgpt의 답변 내용이 길어서 내가 작성한 채팅 내용을 가끔 까먹기 때문에 손쉽게 내용을 확인하기 위한 것 2. 내 채팅 내용이 상단에 높이 100px 로 sticky 되어서 계속 내용이 보이도록함    - 현재 보고 있는 GPT의 답변이 어떤 채팅 내용에 관한 것인지 알아보기 위한 것 3. 내가 작성한 채팅 프롬프팅을 chrome extension 내에서 조회해볼 수 있음    - 이미지 혹은 pdf 등 첨부파일과 텍스트가 함께 보여야 함    - 해당 채팅 프롬프트를 클릭하면 이 프롬프팅의 답변을 얻은 URL로 이동하게 만드는 것",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:dev": "./scripts/build-development.sh",
+    "build:prod": "./scripts/build-production.sh",
+    "build": "npm run build:prod"
+  },
+  "private": true,
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "sharp": "^0.34.2"
+  },
+  "dependencies": {
+    "playwright": "^1.52.0"
+  }
+}

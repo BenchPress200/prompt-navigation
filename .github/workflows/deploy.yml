@@ -1,0 +1,169 @@
+name: Chrome Extension Build and Deploy
+
+on:
+  push:
+    tags:
+      - 'v*'  # v1.0.0 같은 태그가 푸시될 때 실행
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Get version from manifest
+      id: version
+      run: |
+        VERSION=$(grep '"version"' manifest.json | cut -d '"' -f 4)
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Install dependencies (if any)
+      run: |
+        if [ -f package.json ]; then
+          npm ci
+        fi
+    
+    - name: Generate icons (if needed)
+      run: |
+        if [ -f generate-icons.js ]; then
+          node generate-icons.js
+        fi
+    
+    - name: Create distribution directory
+      run: |
+        mkdir -p dist
+        cp manifest.json dist/
+        # 필수 JS 파일들만 복사
+        cp content.js popup.js background.js dist/ 2>/dev/null || echo "일부 JS 파일이 없을 수 있습니다"
+        cp *.css dist/ 2>/dev/null || echo "CSS 파일이 없을 수 있습니다"
+        cp *.html dist/ 2>/dev/null || echo "HTML 파일이 없을 수 있습니다"
+        if [ -d "icons" ]; then
+          cp -r icons dist/
+        else
+          echo "경고: icons 디렉토리가 없습니다"
+        fi
+    
+    - name: Remove development code
+      run: |
+        # JavaScript 파일들에서 개발용 코드 제거
+        for file in dist/*.js; do
+          if [ -f "$file" ]; then
+            echo "개발용 코드 제거: $(basename "$file")"
+            sed -i '/console\.log/d' "$file"
+            sed -i '/console\.warn/d' "$file"
+            sed -i '/console\.error/d' "$file"
+            sed -i '/console\.debug/d' "$file"
+            # 주석 제거 (선택적)
+            sed -i '/^\/\//d' "$file"
+            sed -i '/^\/\*/,/\*\//d' "$file"
+          fi
+        done
+    
+    - name: Create ZIP file
+      run: |
+        cd dist
+        zip -r ../prompt-navigator-${{ steps.version.outputs.VERSION }}.zip . -x ".*" -x "__MACOSX"
+        cd ..
+    
+    - name: Validate build
+      run: |
+        echo "배포 파일 유효성 검사"
+        
+        # manifest.json 검증
+        if [ -f "dist/manifest.json" ]; then
+          echo "✓ manifest.json 존재"
+          # JSON 유효성 검사
+          python3 -c "import json; json.load(open('dist/manifest.json'))" && echo "✓ manifest.json 형식 유효" || echo "✗ manifest.json 형식 오류"
+        else
+          echo "✗ manifest.json 누락" && exit 1
+        fi
+        
+        # 아이콘 파일 검증
+        if [ -d "dist/icons" ]; then
+          echo "✓ 아이콘 디렉토리 존재"
+          for size in 16 48 128; do
+            if [ -f "dist/icons/icon${size}.png" ]; then
+              echo "  ✓ icon${size}.png 존재"
+            else
+              echo "  ✗ icon${size}.png 누락" && exit 1
+            fi
+          done
+        else
+          echo "✗ 아이콘 디렉토리 누락" && exit 1
+        fi
+        
+        # 필수 파일 검증
+        for file in content.js popup.js background.js popup.html; do
+          if [ -f "dist/$file" ]; then
+            echo "✓ $file 존재"
+          else
+            echo "✗ $file 누락" && exit 1
+          fi
+        done
+        
+        echo "모든 필수 파일이 존재합니다!"
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: chrome-extension-${{ steps.version.outputs.VERSION }}
+        path: prompt-navigator-${{ steps.version.outputs.VERSION }}.zip
+        retention-days: 30
+    
+    # Chrome Web Store 자동 배포 (선택사항)
+    - name: Upload to Chrome Web Store
+      if: ${{ secrets.CHROME_REFRESH_TOKEN != '' && startsWith(github.ref, 'refs/tags/') }}
+      uses: mnao305/chrome-extension-upload@v5.0.0
+      with:
+        file-path: prompt-navigator-${{ steps.version.outputs.VERSION }}.zip
+        extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
+        client-id: ${{ secrets.CHROME_CLIENT_ID }}
+        client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+        refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+        publish-target: default
+    
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: prompt-navigator-${{ steps.version.outputs.VERSION }}.zip
+        body: |
+          ## Prompt Navigator v${{ steps.version.outputs.VERSION }}
+          
+          ChatGPT 사용 경험을 향상시키는 Chrome 확장 프로그램 새로운 버전입니다.
+          
+          ### 주요 기능
+          - 프롬프트 간 빠른 네비게이션
+          - 키보드 단축키 지원
+          - 프롬프트 히스토리 자동 저장
+          - 정규식 기반 검색 기능
+          
+          ### 설치 방법
+          
+          #### Chrome Web Store에서 설치 (추천)
+          1. [Chrome Web Store](https://chrome.google.com/webstore)에서 'Prompt Navigator' 검색
+          2. '그리고 Chrome에 추가' 버튼 클릭
+          
+          #### 수동 설치 (개발자 모드)
+          1. 아래 ZIP 파일 다운로드
+          2. Chrome에서 `chrome://extensions/` 접속
+          3. '개발자 모드' 활성화
+          4. '압축해제된 확장 프로그램을 로드합니다' 클릭
+          5. 다운로드한 ZIP 파일 선택
+          
+          ### 지원
+          - 버그 리포트: [GitHub Issues](https://github.com/ej31/prompt-navigation/issues)
+          - 문의: itj1032@gmail.com
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
