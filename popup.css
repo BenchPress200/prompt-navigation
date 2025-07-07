@@ -7,7 +7,7 @@
 }
 
 body {
-  width: 400px;
+  min-width: 400px;
   min-height: 500px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #f7f7f8;
@@ -350,6 +350,14 @@ header h1 {
   align-items: center;
   font-size: 12px;
   color: #666;
+}
+
+.group-info-box {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  gap: 10px;
 }
 
 .duplicate-count {
@@ -811,7 +819,8 @@ input:checked + .slider:before {
   background-position: right 8px center;
   background-size: 16px;
   padding-right: 35px;
-  min-width: 180px;
+  display: flex;
+  flex-direction: row;
 }
 
 .theme-select:focus {
@@ -871,8 +880,8 @@ input:checked + .slider:before {
 /* 도움말 탭 스타일 */
 .help-container {
   padding: 20px;
-  max-height: 450px;
-  overflow-y: auto;
+  /* max-height: 450px; */
+  /* overflow-y: none; */
 }
 
 .help-section {
@@ -932,7 +941,7 @@ input:checked + .slider:before {
   font-size: 13px;
   color: #666;
   margin: 2px 0;
-  line-height: 1.3;
+  line-height: 2;
 }
 
 .help-note {
@@ -1221,7 +1230,12 @@ kbd {
     border-color: #444;
     color: #e5e5e5;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23e5e5e5' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
   }
+
+
 
   .theme-select:focus {
     border-color: #10a37f;

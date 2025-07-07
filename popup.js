@@ -94,10 +94,17 @@ function loadHistory() {
           <div class="group-header">
             <div class="group-prompt">${escapeHtml(group.chatTitle)}</div>
             <div class="group-info">
-              <span class="duplicate-count">${group.qnaPairs.length}개의 질문</span>
-              ${siteHtml}
-              <span class="group-time">${timeString}</span>
-              <button class="group-toggle">펼치기</button>
+
+              <div class="group-info-box">
+                <span class="duplicate-count">${group.qnaPairs.length}개의 질문</span>
+                ${siteHtml}
+              </div>
+
+              <div class="group-info-box">
+                <span class="group-time">${timeString}</span>
+                <button class="group-toggle">펼치기</button>
+              </div>
+
             </div>
           </div>
           <div class="group-items" style="display: none;">
